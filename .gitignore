@@ -1,3 +1,26 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# venvs
+.venv/
+venv/
+.python-version
+
+# uv
+uv.lock
+
+# IDE / OS
+.DS_Store
+.idea/
+.vscode/
+*.swp
+
+# Lightning / remotes
 .lightning_studio
 .llama-app
 .cursor-server
@@ -5,3 +28,11 @@
 .windsurf-server
 this_studio.iml
 settings.json
+
+# infer-serve runtime
+serve/state.json
+serve/logs/
+
+# Rapports générés (artefacts utilisateur)
+report.json
+*.report.json
