@@ -23,6 +23,30 @@ from resources import ResourceUsage, VRAMMonitor
 from throughput import ThroughputPoint, sweep_throughput
 
 
+def _try_measure(
+    *, base_url, model, prompt, api_key, max_tokens,
+    max_retries: int = 2, backoff_s: float = 1.0,
+) -> LatencyResult | None:
+    """
+    Wrapper résilient autour de measure_latency_once.
+    Retry sur exception (5xx, timeout, JSON, etc.), puis renvoie None.
+    Le caller décide s'il continue ou abandonne.
+    """
+    last_err: Exception | None = None
+    for attempt in range(max_retries + 1):
+        try:
+            return measure_latency_once(
+                base_url=base_url, model=model, prompt=prompt,
+                api_key=api_key, max_tokens=max_tokens,
+            )
+        except Exception as e:
+            last_err = e
+            if attempt < max_retries:
+                time.sleep(backoff_s * (2 ** attempt))
+    print(f"  ⚠ run échoué après {max_retries+1} tentatives : {last_err}")
+    return None
+
+
 @dataclass
 class UnifiedReport:
     """Snapshot complet d'un modèle sous un endpoint donné."""
@@ -97,31 +121,44 @@ def run_full_report(
         # ── v0.1 — Latence ──────────────────────────────────────────────
         notify("stage", "latency")
         for _ in range(warmup):
-            measure_latency_once(
+            _try_measure(
                 base_url=base_url, model=model, prompt=prompt,
                 api_key=api_key, max_tokens=max_tokens,
             )
         results: list[LatencyResult] = []
+        n_failed = 0
         for i in range(latency_runs):
-            r = measure_latency_once(
+            r = _try_measure(
                 base_url=base_url, model=model, prompt=prompt,
                 api_key=api_key, max_tokens=max_tokens,
             )
+            if r is None:
+                n_failed += 1
+                # Si plus de la moitié des runs échouent : on s'arrête.
+                if n_failed > latency_runs // 2:
+                    print("  ⚠ trop d'échecs (>50%), abandon de la latence.")
+                    break
+                continue
             results.append(r)
             notify("latency_run", (i + 1, latency_runs, r))
-        report.latency_summary = summarize(results)
-        report.latency_runs = [asdict(r) for r in results]
+        if results:
+            report.latency_summary = summarize(results)
+            report.latency_runs = [asdict(r) for r in results]
 
         # ── v0.2 — Débit ────────────────────────────────────────────────
+        points: list[ThroughputPoint] = []
         if concurrencies:
             notify("stage", "throughput")
-            points: list[ThroughputPoint] = sweep_throughput(
-                base_url=base_url, model=model, prompt=prompt,
-                concurrencies=concurrencies,
-                requests_per_level=requests_per_level,
-                api_key=api_key, max_tokens=max_tokens,
-                on_point=lambda p: notify("throughput_point", p),
-            )
+            try:
+                points = sweep_throughput(
+                    base_url=base_url, model=model, prompt=prompt,
+                    concurrencies=concurrencies,
+                    requests_per_level=requests_per_level,
+                    api_key=api_key, max_tokens=max_tokens,
+                    on_point=lambda p: notify("throughput_point", p),
+                )
+            except Exception as e:
+                print(f"  ⚠ sweep de débit interrompu : {e}")
             report.throughput_curve = [
                 {
                     "concurrency": p.concurrency,
@@ -141,16 +178,19 @@ def run_full_report(
 
         # ── v0.3 — Coût ─────────────────────────────────────────────────
         notify("stage", "cost")
-        try:
-            cb: CostBreakdown = cost_from_results(
-                results, model=model,
-                price_in_per_mtok=price_in_per_mtok,
-                price_out_per_mtok=price_out_per_mtok,
-                fallback_prompt_tokens=max(1, len(prompt) // 4),
-            )
-            report.cost = asdict(cb)
-        except ValueError as e:
-            report.cost = {"error": str(e)}
+        if not results:
+            report.cost = {"error": "aucun run de latence réussi, coût non calculé"}
+        else:
+            try:
+                cb: CostBreakdown = cost_from_results(
+                    results, model=model,
+                    price_in_per_mtok=price_in_per_mtok,
+                    price_out_per_mtok=price_out_per_mtok,
+                    fallback_prompt_tokens=max(1, len(prompt) // 4),
+                )
+                report.cost = asdict(cb)
+            except ValueError as e:
+                report.cost = {"error": str(e)}
 
     finally:
         # ── v0.4 — Ressources ───────────────────────────────────────────
