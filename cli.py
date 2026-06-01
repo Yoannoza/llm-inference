@@ -22,6 +22,7 @@ import sys
 
 from .cost import compute_cost, cost_from_results
 from .latency import measure_latency_once, summarize
+from .live import EventBus, adapt_event, start_server
 from .report import report_to_json, run_full_report
 from .resources import VRAMMonitor
 from .throughput import sweep_throughput
@@ -194,6 +195,15 @@ def cmd_report(args) -> int:
         if args.concurrencies else None
     )
 
+    bus = None
+    httpd = None
+    if args.serve:
+        bus = EventBus()
+        httpd = start_server(bus, args.serve_host, args.serve_port)
+        url_host = "localhost" if args.serve_host in ("0.0.0.0", "") else args.serve_host
+        print(f"\n● Live dashboard : http://{url_host}:{args.serve_port}")
+        print("   (Ctrl-C pour arrêter)\n")
+
     def on_event(stage, payload):
         if stage == "stage":
             print(f"\n── {payload.upper()} ──")
@@ -202,6 +212,8 @@ def cmd_report(args) -> int:
             print(f"  [run {i}/{n}] {r}")
         elif stage == "throughput_point":
             print(f"  {payload}")
+        if bus is not None:
+            bus.publish(adapt_event(stage, payload))
 
     report = run_full_report(
         base_url=args.base_url, model=args.model, prompt=args.prompt,
@@ -246,6 +258,18 @@ def cmd_report(args) -> int:
         with open(args.json_out, "w") as f:
             f.write(report_to_json(report))
         print(f"  Rapport JSON écrit dans {args.json_out}\n")
+
+    if httpd is not None:
+        url_host = "localhost" if args.serve_host in ("0.0.0.0", "") else args.serve_host
+        print(f"● Rapport disponible sur http://{url_host}:{args.serve_port}")
+        print("  Ctrl-C pour fermer le serveur.\n")
+        try:
+            import time
+            while True:
+                time.sleep(3600)
+        except KeyboardInterrupt:
+            print("\n→ arrêt du serveur.")
+            httpd.shutdown()
     return 0
 
 
@@ -318,6 +342,12 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--no-resources", action="store_true")
     p.add_argument("--json-out", default=None,
                    help="Chemin de sortie JSON (optionnel).")
+    p.add_argument("--serve", action="store_true",
+                   help="Démarre un dashboard live (HTTP+SSE) pendant le run.")
+    p.add_argument("--serve-host", default="0.0.0.0",
+                   help="Host du dashboard live (défaut: 0.0.0.0).")
+    p.add_argument("--serve-port", type=int, default=9000,
+                   help="Port du dashboard live (défaut: 9000).")
     p.set_defaults(func=cmd_report)
 
     return parser

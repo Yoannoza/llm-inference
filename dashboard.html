@@ -38,10 +38,11 @@
   --ink-mute:     oklch(0.70 0.020 70);   /* labels, métadonnées (≥ AA) */
   --ink-faint:    oklch(0.42 0.018 65);   /* tick marks, séparateurs */
 
-  --copper:       oklch(0.74 0.135 60);   /* accent cuivre, rare */
+  --copper:       oklch(0.78 0.135 60);   /* accent cuivre — valeur Coût */
   --copper-soft:  oklch(0.62 0.110 55);
-  --terracotta:   oklch(0.66 0.130 35);   /* data : TTFT (courbe) */
-  --ochre:        oklch(0.78 0.130 80);   /* data : débit (courbe) */
+  --terracotta:   oklch(0.74 0.140 35);   /* valeur Latence + TTFT courbe */
+  --ochre:        oklch(0.82 0.140 80);   /* valeur Débit + courbe */
+  --moss:         oklch(0.78 0.090 130);  /* valeur Ressources */
 
   --font: "Lexend", -apple-system, system-ui, sans-serif;
 }
@@ -101,12 +102,22 @@ button.link {
 
 .masthead h1 {
   font-family: var(--font);
-  font-weight: 200;
-  font-size: clamp(40px, 6vw, 68px);
-  line-height: 1.02;
-  letter-spacing: -0.02em;
+  font-weight: 300;
+  font-size: clamp(40px, 6.5vw, 72px);
+  line-height: 1.0;
+  letter-spacing: -0.035em;
   margin: 0 0 var(--space-xs);
   color: var(--ink);
+  font-feature-settings: "ss01" 1, "tnum" 1;
+}
+.masthead h1 .sub {
+  display: block;
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--ink-mute);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  margin-top: var(--space-md);
 }
 
 .serial {
@@ -197,14 +208,12 @@ button.link {
 
 .dials {
   display: grid;
-  grid-template-columns: 1.4fr 1fr 1fr;
+  grid-template-columns: repeat(3, 1fr);
   gap: var(--space-md);
 }
+.dial--hero { grid-column: 1 / -1; }
 
-@media (max-width: 980px) {
-  .dials { grid-template-columns: 1fr 1fr; }
-}
-@media (max-width: 620px) {
+@media (max-width: 720px) {
   .dials { grid-template-columns: 1fr; }
 }
 
@@ -220,14 +229,20 @@ button.link {
 }
 
 .dial--hero {
-  grid-row: span 1;
-  grid-column: span 1;
   background: var(--bg-elev-2);
   border-color: var(--hairline-2);
+  padding: var(--space-xl) var(--space-xl) var(--space-xl);
 }
 
-.dial--inactive .dial-value { color: var(--ink-mute); }
-.dial--inactive .dial-value .unit { opacity: 0.5; }
+.dial--inactive .dial-value {
+  color: var(--ink-mute);
+  font-size: 18px;
+  font-weight: 400;
+  letter-spacing: 0;
+  font-style: italic;
+}
+.dial--inactive .dial-value .unit { display: none; }
+.dial--inactive .dial-footer { opacity: 0.5; }
 
 .dial-head {
   margin-bottom: var(--space-md);
@@ -235,32 +250,67 @@ button.link {
 
 .dial-label {
   font-family: var(--font);
-  font-size: 10.5px;
-  color: var(--ink-mute);
-  letter-spacing: 0.18em;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ink-soft);
+  letter-spacing: 0.16em;
   text-transform: uppercase;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
 }
+/* Petit marqueur de famille (point de couleur) à côté du label */
+.dial-label::before {
+  content: "";
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--family, var(--copper));
+  flex-shrink: 0;
+}
+
+/* Définition pédagogique : ce que la métrique mesure, en une ligne */
+.dial-caption {
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--ink-mute);
+  margin: 8px 0 var(--space-md);
+  max-width: 42ch;
+  line-height: 1.45;
+}
+.dial-caption em {
+  font-style: italic;
+  color: var(--family, var(--copper));
+  font-weight: 500;
+}
+.dial--hero .sub-dial .dial-caption { margin-bottom: var(--space-lg); }
 
 .dial-value {
   font-family: var(--font);
   font-feature-settings: "tnum" 1, "zero" 1;
   font-variant-numeric: tabular-nums;
-  font-weight: 300;
-  font-size: clamp(38px, 5.5vw, 64px);
+  font-weight: 500;
+  font-size: clamp(40px, 5.8vw, 68px);
   line-height: 1;
-  color: var(--ink);
-  letter-spacing: -0.025em;
+  color: var(--family, var(--ink));
+  letter-spacing: -0.03em;
   display: flex;
   align-items: baseline;
   gap: 8px;
 }
 .dial-value .unit {
   font-family: var(--font);
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 400;
   color: var(--ink-mute);
-  letter-spacing: 0;
+  letter-spacing: 0.02em;
 }
+
+/* Couleur de famille — chaque cadran porte sa teinte */
+.dial[data-family="latency"]   { --family: var(--terracotta); }
+.dial[data-family="throughput"]{ --family: var(--ochre); }
+.dial[data-family="cost"]      { --family: var(--copper); }
+.dial[data-family="resources"] { --family: var(--moss); }
+
 
 .dial--hero .dial-value-pair {
   display: grid;
@@ -273,8 +323,8 @@ button.link {
   background: var(--hairline);
   align-self: stretch;
 }
-.dial--hero .sub-dial .dial-label { margin-bottom: var(--space-xs); display: block; }
-.dial--hero .sub-dial .dial-value { font-size: clamp(32px, 4vw, 44px); }
+.dial--hero .sub-dial .dial-label { margin-bottom: var(--space-sm); display: block; }
+.dial--hero .sub-dial .dial-value { font-size: clamp(56px, 7vw, 92px); }
 
 .dial-footer {
   margin-top: auto;
@@ -425,7 +475,7 @@ svg.plot-svg .annot-line { stroke: var(--copper); stroke-width: 1; stroke-dashar
 
   <header class="masthead">
     <div>
-      <h1>Relevé d'inférence</h1>
+      <h1><span id="hd-model">—</span><span class="sub" id="hd-sub">relevé d'inférence</span></h1>
     </div>
     <div class="serial">
       <div><b>infer-metrics</b></div>
@@ -434,9 +484,8 @@ svg.plot-svg .annot-line { stroke: var(--copper); stroke-width: 1; stroke-dashar
     </div>
   </header>
 
-  <!-- Bandeau de métadonnées du run -->
+  <!-- Bandeau de métadonnées du run (le modèle est dans le H1) -->
   <section class="run-meta data-zone" aria-label="Métadonnées du run">
-    <dl><dt>Modèle</dt><dd id="meta-model">—</dd></dl>
     <dl><dt>Endpoint</dt><dd id="meta-endpoint">—</dd></dl>
     <dl><dt>Runs latence</dt><dd id="meta-runs">—</dd></dl>
     <dl><dt>Échantillon</dt><dd id="meta-sample">—</dd></dl>
@@ -455,13 +504,18 @@ svg.plot-svg .annot-line { stroke: var(--copper); stroke-width: 1; stroke-dashar
 
     <div class="dials">
       <!-- Carte hero : Latence (TTFT + TPOT) -->
-      <article class="dial dial--hero">
+      <article class="dial dial--hero" data-family="latency">
         <div class="dial-head">
           <span class="dial-label">Latence</span>
+          <p class="dial-caption">
+            Comment le modèle se ressent côté utilisateur : vitesse d'arrivée du
+            premier mot, puis cadence des suivants.
+          </p>
         </div>
         <div class="dial-value-pair">
           <div class="sub-dial">
             <span class="dial-label">TTFT médian</span>
+            <p class="dial-caption">Délai jusqu'au premier token reçu. Dominé par le <em>prefill</em> et la file d'attente.</p>
             <div class="dial-value">
               <span id="m-ttft">—</span><span class="unit">ms</span>
             </div>
@@ -469,6 +523,7 @@ svg.plot-svg .annot-line { stroke: var(--copper); stroke-width: 1; stroke-dashar
           <div class="sep" aria-hidden="true"></div>
           <div class="sub-dial">
             <span class="dial-label">TPOT médian</span>
+            <p class="dial-caption">Temps moyen par token suivant. Reflète l'efficacité du <em>decode</em>.</p>
             <div class="dial-value">
               <span id="m-tpot">—</span><span class="unit">ms/tok</span>
             </div>
@@ -482,9 +537,10 @@ svg.plot-svg .annot-line { stroke: var(--copper); stroke-width: 1; stroke-dashar
       </article>
 
       <!-- Carte débit -->
-      <article class="dial">
+      <article class="dial" data-family="throughput">
         <div class="dial-head">
           <span class="dial-label">Débit système</span>
+          <p class="dial-caption">Tokens/seconde produits par le serveur sur tout le batch. Ce que voit l'opérateur.</p>
         </div>
         <div class="dial-value">
           <span id="m-tput">—</span><span class="unit">tok/s</span>
@@ -495,9 +551,10 @@ svg.plot-svg .annot-line { stroke: var(--copper); stroke-width: 1; stroke-dashar
       </article>
 
       <!-- Carte coût -->
-      <article class="dial">
+      <article class="dial" data-family="cost">
         <div class="dial-head">
           <span class="dial-label">Coût · $/1M tok out</span>
+          <p class="dial-caption">Prix observé du run, ramené à 1 million de tokens de sortie. Unité standard de comparaison.</p>
         </div>
         <div class="dial-value">
           <span class="unit" style="margin-right: 2px;">$</span><span id="m-cost">—</span>
@@ -509,9 +566,10 @@ svg.plot-svg .annot-line { stroke: var(--copper); stroke-width: 1; stroke-dashar
       </article>
 
       <!-- Carte VRAM (s'efface si non dispo) -->
-      <article class="dial" id="dial-vram">
+      <article class="dial" id="dial-vram" data-family="resources">
         <div class="dial-head">
           <span class="dial-label">VRAM peak</span>
+          <p class="dial-caption">Mémoire GPU consommée au pic. Détermine le batch max et la longueur de contexte exploitable.</p>
         </div>
         <div class="dial-value">
           <span id="m-vram">—</span><span class="unit">MiB</span>
@@ -551,7 +609,7 @@ svg.plot-svg .annot-line { stroke: var(--copper); stroke-width: 1; stroke-dashar
       <p class="plot-legend">
         Lecture : à concurrence faible, la latence est basse mais le débit
         plafonne. À concurrence élevée, le débit système monte jusqu'à un
-        coude — au-delà, la file d'attente s'allonge et le TTFT explose.
+        coude. Au-delà, la file d'attente s'allonge et le TTFT explose.
         Le bon point d'opération est <b>juste avant ce coude</b>.
       </p>
     </div>
@@ -582,7 +640,7 @@ svg.plot-svg .annot-line { stroke: var(--copper); stroke-width: 1; stroke-dashar
   </section>
 
   <footer class="colophon">
-    <span><button type="button" class="link" id="load-link">charger un relevé</button> — ou glisse-le sur la page <span id="load-status" role="status" aria-live="polite"></span></span>
+    <span><button type="button" class="link" id="load-link">charger un relevé</button> · ou glisse-le sur la page <span id="load-status" role="status" aria-live="polite"></span></span>
     <span>draft-gaikwad-llm-benchmarking-terminology · MIT</span>
   </footer>
 
@@ -661,7 +719,15 @@ function shortHost(url) {
 function render(report) {
   const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
 
-  // En-tête
+  // En-tête : le modèle EST le titre, pas un slogan
+  set("hd-model", report.model || "modèle ?");
+  const date = report.timestamp_utc
+    ? new Date(report.timestamp_utc).toLocaleDateString("fr-FR",
+        { day: "2-digit", month: "short", year: "numeric" })
+    : "";
+  set("hd-sub", date
+    ? `relevé d'inférence · ${date}`
+    : "relevé d'inférence");
   set("serial-ts", report.timestamp_utc || "—");
   set("serial-host", report.host?.machine
     ? `${report.host.platform?.split("-")[0] || "host"} · ${report.host.machine}`
@@ -707,7 +773,7 @@ function render(report) {
     set("m-vram-tot", fmt.int(r.vram_total_mib));
     set("m-gpu-util", fmt.int(r.util_gpu_peak_pct));
   } else {
-    set("m-vram", "n/d");
+    set("m-vram", "non mesurée · hôte sans nvidia-smi");
     set("m-vram-tot", "—");
     set("m-gpu-util", "—");
   }
@@ -735,8 +801,10 @@ function drawPlot(points) {
   }
 
   // Marges intérieures du plot
-  const W = 900, H = 380;
-  const M = { t: 24, r: 70, b: 56, l: 64 };
+  // M.t large : laisse de la place pour l'annotation du pic au-dessus
+  // du tick supérieur, sans collision.
+  const W = 900, H = 400;
+  const M = { t: 56, r: 72, b: 56, l: 64 };
   const innerW = W - M.l - M.r;
   const innerH = H - M.t - M.b;
 
@@ -809,11 +877,15 @@ function drawPlot(points) {
     svg.appendChild(el("circle", { class: "point ttft", cx: xScale(p.concurrency), cy: yTtft(p.ttft_median_ms), r: 3.5 }));
   });
 
-  // Annotation : pic de débit
+  // Annotation : pic de débit — au-dessus de la zone des ticks pour éviter
+  // toute collision avec les labels d'axe.
   const best = points.reduce((a, b) => a.system_tokens_per_sec > b.system_tokens_per_sec ? a : b);
   const bx = xScale(best.concurrency), by = yTput(best.system_tokens_per_sec);
-  svg.appendChild(el("line", { class: "annot-line", x1: bx, x2: bx, y1: by - 4, y2: M.t + 14 }));
-  const annot = el("text", { class: "annot", x: bx, y: M.t + 8, "text-anchor": "middle" });
+  // Ancrage horizontal du texte selon position sur l'axe X (évite le débord
+  // à droite quand le pic est près du bord).
+  const anchor = bx > M.l + innerW * 0.7 ? "end" : bx < M.l + innerW * 0.3 ? "start" : "middle";
+  svg.appendChild(el("line", { class: "annot-line", x1: bx, x2: bx, y1: by - 6, y2: 28 }));
+  const annot = el("text", { class: "annot", x: bx, y: 20, "text-anchor": anchor });
   annot.textContent = `▼ pic ${Math.round(best.system_tokens_per_sec)} tok/s · conc ${best.concurrency}`;
   svg.appendChild(annot);
 }
@@ -901,6 +973,73 @@ function readFile(file) {
 
 // On rend la démo immédiatement — la page est jolie même sans fichier.
 render(DEMO);
+
+// ──────────────────────────────────────────────────────────────────────
+// Mode live : si servi en http(s), connecte SSE sur /events
+// ──────────────────────────────────────────────────────────────────────
+if (location.protocol === "http:" || location.protocol === "https:") {
+  const banner = document.createElement("div");
+  banner.id = "live-banner";
+  banner.style.cssText = [
+    "position:fixed", "top:0", "left:0", "right:0",
+    "padding:10px 18px", "background:var(--bg-elev-2)",
+    "border-bottom:1px solid var(--hairline)",
+    "color:var(--ink-soft)", "font:13px/1.4 var(--font)",
+    "z-index:1000", "display:flex", "gap:14px", "align-items:center",
+    "letter-spacing:0.02em",
+  ].join(";");
+  banner.innerHTML = `
+    <span id="live-dot" style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--copper);box-shadow:0 0 8px var(--copper);animation:pulse 1.4s ease-in-out infinite"></span>
+    <span style="color:var(--ink);font-weight:500">LIVE</span>
+    <span id="live-status">connexion…</span>
+    <span id="live-progress" style="margin-left:auto;color:var(--ink-mute);font-variant-numeric:tabular-nums"></span>
+  `;
+  document.body.prepend(banner);
+  document.body.style.paddingTop = "44px";
+
+  const styleEl = document.createElement("style");
+  styleEl.textContent = `@keyframes pulse { 0%,100% { opacity:1 } 50% { opacity:0.35 } }`;
+  document.head.appendChild(styleEl);
+
+  const s = document.getElementById("live-status");
+  const p = document.getElementById("live-progress");
+  const dot = document.getElementById("live-dot");
+
+  const es = new EventSource("/events");
+  es.onopen = () => { s.textContent = "connecté · en attente…"; };
+  es.onerror = () => {
+    s.textContent = "déconnecté";
+    dot.style.background = "var(--terracotta)";
+    dot.style.boxShadow = "0 0 8px var(--terracotta)";
+  };
+  es.onmessage = (m) => {
+    let ev;
+    try { ev = JSON.parse(m.data); } catch { return; }
+    if (ev.type === "stage") {
+      s.textContent = `étape : ${ev.name}`;
+    } else if (ev.type === "latency_run") {
+      const r = ev.result || {};
+      const ttft = r.ttft_ms ?? r.ttft_first_token_ms;
+      const tpot = r.tpot_ms_per_token ?? r.tpot_ms;
+      s.textContent = `latence ${ev.i}/${ev.n}`;
+      p.textContent = `TTFT ${ttft?.toFixed?.(0) ?? "—"} ms · TPOT ${tpot?.toFixed?.(1) ?? "—"} ms/tok`;
+    } else if (ev.type === "throughput_point") {
+      const pt = ev.point || {};
+      s.textContent = `débit · conc=${pt.concurrency}`;
+      p.textContent = `${pt.system_tokens_per_sec?.toFixed?.(1) ?? "—"} tok/s`;
+    } else if (ev.type === "done") {
+      s.innerHTML = `<span style="color:var(--moss);font-weight:500">✓ terminé</span>`;
+      p.textContent = "";
+      dot.style.background = "var(--moss)";
+      dot.style.boxShadow = "0 0 8px var(--moss)";
+      dot.style.animation = "none";
+      if (ev.report) {
+        try { render(ev.report); setStatus("rapport live"); } catch (e) {}
+      }
+      es.close();
+    }
+  };
+}
 </script>
 
 </body>
