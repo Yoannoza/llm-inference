@@ -1,1 +1,2 @@
 httpx>=0.27
+huggingface_hub>=0.24
