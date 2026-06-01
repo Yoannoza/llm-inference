@@ -1,0 +1,907 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>infer-metrics · relevé d'inférence</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Lexend:wght@200;300;400;500;600;700&display=swap" />
+<style>
+/* ──────────────────────────────────────────────────────────────────────
+   infer-metrics — relevé d'instrument
+   Direction : oscilloscope analogique posé sur un bureau en cuir.
+   Palette OKLCH neutres tintées vers le hue brun (50°).
+   ─────────────────────────────────────────────────────────────────── */
+
+:root {
+  /* Espacements — échelle 4pt, tokens sémantiques */
+  --space-2xs: 4px;
+  --space-xs:  8px;
+  --space-sm: 12px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 32px;
+  --space-2xl: 48px;
+  --space-3xl: 64px;
+  --space-4xl: 96px;
+
+  /* Couleurs — marron profond, hue 50° (brun chaud) */
+  --bg:           oklch(0.16 0.018 50);   /* noir-brun profond, fond */
+  --bg-elev-1:   oklch(0.20 0.022 50);    /* cartes */
+  --bg-elev-2:   oklch(0.235 0.024 50);   /* sur-cartes, valeur hero */
+  --hairline:    oklch(0.30 0.020 50);    /* bordures 1px discrètes */
+  --hairline-2:  oklch(0.38 0.022 50);    /* bordures plus visibles */
+  --ink:          oklch(0.94 0.025 80);   /* texte primaire crème */
+  --ink-soft:     oklch(0.78 0.022 75);   /* texte secondaire sable */
+  --ink-mute:     oklch(0.70 0.020 70);   /* labels, métadonnées (≥ AA) */
+  --ink-faint:    oklch(0.42 0.018 65);   /* tick marks, séparateurs */
+
+  --copper:       oklch(0.74 0.135 60);   /* accent cuivre, rare */
+  --copper-soft:  oklch(0.62 0.110 55);
+  --terracotta:   oklch(0.66 0.130 35);   /* data : TTFT (courbe) */
+  --ochre:        oklch(0.78 0.130 80);   /* data : débit (courbe) */
+
+  --font: "Lexend", -apple-system, system-ui, sans-serif;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font);
+  font-weight: 400;
+  font-size: 15px;
+  line-height: 1.55;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+::selection { background: var(--copper-soft); color: var(--bg); }
+
+a, button.link { color: var(--copper); text-decoration: none; border-bottom: 1px solid color-mix(in oklch, var(--copper), transparent 60%); }
+a:hover, button.link:hover { border-bottom-color: var(--copper); }
+
+button.link {
+  background: none; border: 0; border-bottom: 1px solid color-mix(in oklch, var(--copper), transparent 60%);
+  padding: 0; cursor: pointer; font: inherit; letter-spacing: inherit;
+}
+
+:focus { outline: none; }
+:focus-visible {
+  outline: 2px solid var(--copper);
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+
+/* ─── Layout ──────────────────────────────────────────────────────── */
+
+.frame {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: clamp(var(--space-xl), 4vw, var(--space-3xl)) clamp(var(--space-lg), 4vw, var(--space-2xl)) var(--space-3xl);
+}
+
+/* ─── Header / en-tête de relevé ──────────────────────────────────── */
+
+.masthead {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: end;
+  gap: var(--space-lg);
+  padding-bottom: var(--space-lg);
+  border-bottom: 1px solid var(--hairline);
+  margin-bottom: var(--space-2xl);
+}
+
+.masthead h1 {
+  font-family: var(--font);
+  font-weight: 200;
+  font-size: clamp(40px, 6vw, 68px);
+  line-height: 1.02;
+  letter-spacing: -0.02em;
+  margin: 0 0 var(--space-xs);
+  color: var(--ink);
+}
+
+.serial {
+  font-family: var(--font);
+  font-size: 11px;
+  color: var(--ink-mute);
+  text-align: right;
+  line-height: 1.5;
+}
+.serial b { color: var(--ink-soft); font-weight: 500; }
+
+/* ─── Bandeau "fiche du run" ──────────────────────────────────────── */
+
+.run-meta {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: var(--space-lg) var(--space-2xl);
+  margin-bottom: var(--space-2xl);
+  padding-bottom: var(--space-lg);
+  border-bottom: 1px solid var(--hairline);
+}
+
+.run-meta dl {
+  margin: 0;
+}
+
+.run-meta dt {
+  font-family: var(--font);
+  font-size: 10.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-mute);
+  margin-bottom: var(--space-2xs);
+}
+.run-meta dd {
+  margin: 0;
+  font-family: var(--font);
+  font-size: 14px;
+  color: var(--ink);
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ─── Section : title rule ────────────────────────────────────────── */
+
+.section {
+  margin-bottom: var(--space-3xl);
+}
+
+.section-rule {
+  display: grid;
+  grid-template-columns: auto auto 1fr auto;
+  align-items: baseline;
+  gap: var(--space-md);
+  margin-bottom: var(--space-lg);
+}
+
+.section-rule .num {
+  font-family: var(--font);
+  font-size: 11px;
+  color: var(--copper);
+  letter-spacing: 0.18em;
+}
+.section-rule h2 {
+  font-family: var(--font);
+  font-weight: 300;
+  font-size: 26px;
+  margin: 0;
+  color: var(--ink);
+  letter-spacing: -0.01em;
+}
+.section-rule .line {
+  height: 1px;
+  background: var(--hairline);
+  align-self: center;
+}
+.section-rule .stamp {
+  font-family: var(--font);
+  font-size: 10.5px;
+  letter-spacing: 0.14em;
+  color: var(--ink-mute);
+  text-transform: uppercase;
+}
+
+/* ─── Cartes-cadrans ──────────────────────────────────────────────── */
+
+.dials {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr 1fr;
+  gap: var(--space-md);
+}
+
+@media (max-width: 980px) {
+  .dials { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 620px) {
+  .dials { grid-template-columns: 1fr; }
+}
+
+.dial {
+  background: var(--bg-elev-1);
+  border: 1px solid var(--hairline);
+  border-radius: 2px;
+  padding: var(--space-lg) var(--space-lg) var(--space-xl);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: 220px;
+}
+
+.dial--hero {
+  grid-row: span 1;
+  grid-column: span 1;
+  background: var(--bg-elev-2);
+  border-color: var(--hairline-2);
+}
+
+.dial--inactive .dial-value { color: var(--ink-mute); }
+.dial--inactive .dial-value .unit { opacity: 0.5; }
+
+.dial-head {
+  margin-bottom: var(--space-md);
+}
+
+.dial-label {
+  font-family: var(--font);
+  font-size: 10.5px;
+  color: var(--ink-mute);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.dial-value {
+  font-family: var(--font);
+  font-feature-settings: "tnum" 1, "zero" 1;
+  font-variant-numeric: tabular-nums;
+  font-weight: 300;
+  font-size: clamp(38px, 5.5vw, 64px);
+  line-height: 1;
+  color: var(--ink);
+  letter-spacing: -0.025em;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+.dial-value .unit {
+  font-family: var(--font);
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--ink-mute);
+  letter-spacing: 0;
+}
+
+.dial--hero .dial-value-pair {
+  display: grid;
+  grid-template-columns: 1fr 1px 1fr;
+  gap: var(--space-lg);
+  align-items: end;
+  margin-top: var(--space-sm);
+}
+.dial--hero .dial-value-pair .sep {
+  background: var(--hairline);
+  align-self: stretch;
+}
+.dial--hero .sub-dial .dial-label { margin-bottom: var(--space-xs); display: block; }
+.dial--hero .sub-dial .dial-value { font-size: clamp(32px, 4vw, 44px); }
+
+.dial-footer {
+  margin-top: auto;
+  padding-top: var(--space-md);
+  border-top: 1px solid var(--hairline);
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--font);
+  font-size: 11.5px;
+  color: var(--ink-soft);
+}
+.dial-footer .k { color: var(--ink-mute); margin-right: var(--space-xs); }
+
+/* ─── Courbe latence/débit (SVG natif) ────────────────────────────── */
+
+.plot {
+  background: var(--bg-elev-1);
+  border: 1px solid var(--hairline);
+  border-radius: 2px;
+  padding: var(--space-xl) var(--space-xl) var(--space-lg);
+}
+
+.plot-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: var(--space-md);
+  flex-wrap: wrap;
+  gap: var(--space-md);
+}
+
+.plot-axes-legend {
+  font-family: var(--font);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  color: var(--ink-mute);
+  text-transform: uppercase;
+  display: flex;
+  gap: var(--space-md);
+}
+.plot-axes-legend span::before {
+  content: "■";
+  margin-right: 6px;
+}
+.plot-axes-legend .y::before { color: var(--ochre); }
+.plot-axes-legend .y2::before { color: var(--terracotta); }
+
+svg.plot-svg {
+  width: 100%;
+  height: auto;
+  display: block;
+  font-family: var(--font);
+  font-size: 11px;
+}
+svg.plot-svg .grid-line { stroke: var(--hairline); stroke-width: 1; }
+svg.plot-svg .axis-line { stroke: var(--hairline-2); stroke-width: 1; }
+svg.plot-svg .tick { stroke: var(--ink-faint); stroke-width: 1; }
+svg.plot-svg .tick-label { fill: var(--ink-mute); font-size: 10.5px; }
+svg.plot-svg .axis-title {
+  fill: var(--ink-soft);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+svg.plot-svg .curve-tput { stroke: var(--ochre); stroke-width: 1.5; fill: none; }
+svg.plot-svg .curve-ttft { stroke: var(--terracotta); stroke-width: 1.5; fill: none; stroke-dasharray: 4 3; }
+svg.plot-svg .point { fill: var(--bg); stroke-width: 1.5; }
+svg.plot-svg .point.tput { stroke: var(--ochre); }
+svg.plot-svg .point.ttft { stroke: var(--terracotta); }
+svg.plot-svg .annot { fill: var(--copper); font-size: 11px; }
+svg.plot-svg .annot-line { stroke: var(--copper); stroke-width: 1; stroke-dasharray: 2 2; }
+
+.plot-legend {
+  margin-top: var(--space-md);
+  padding-top: var(--space-md);
+  border-top: 1px solid var(--hairline);
+  font-family: var(--font);
+  font-size: 11.5px;
+  color: var(--ink-soft);
+  line-height: 1.6;
+  max-width: 75ch;
+}
+.plot-legend b { color: var(--copper); font-weight: 500; }
+
+/* ─── Table runs détaillés ────────────────────────────────────────── */
+
+.runs-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--font);
+  font-size: 12.5px;
+  font-feature-settings: "tnum" 1;
+}
+.runs-table th, .runs-table td {
+  padding: var(--space-xs) var(--space-md);
+  border-bottom: 1px solid var(--hairline);
+  text-align: right;
+}
+.runs-table th:first-child, .runs-table td:first-child { text-align: left; color: var(--ink-mute); }
+.runs-table th {
+  font-weight: 400;
+  font-size: 10.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-mute);
+}
+.runs-table td { color: var(--ink-soft); }
+.runs-table tr:hover td { color: var(--ink); background: color-mix(in oklch, var(--bg-elev-1) 50%, transparent); }
+
+/* ─── Footer ──────────────────────────────────────────────────────── */
+
+.colophon {
+  margin-top: var(--space-3xl);
+  padding-top: var(--space-lg);
+  border-top: 1px solid var(--hairline);
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-md);
+  font-family: var(--font);
+  font-size: 11px;
+  color: var(--ink-mute);
+  letter-spacing: 0.08em;
+}
+
+/* Animation discrète d'entrée des cadrans */
+@keyframes rise {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.dial, .plot, .run-meta { animation: rise 700ms cubic-bezier(0.16, 1, 0.3, 1) both; }
+.dial:nth-child(2) { animation-delay: 60ms; }
+.dial:nth-child(3) { animation-delay: 120ms; }
+.dial:nth-child(4) { animation-delay: 180ms; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0ms !important;
+    transition-duration: 0ms !important;
+  }
+}
+
+</style>
+</head>
+<body>
+
+<main class="frame">
+
+  <header class="masthead">
+    <div>
+      <h1>Relevé d'inférence</h1>
+    </div>
+    <div class="serial">
+      <div><b>infer-metrics</b></div>
+      <div id="serial-ts">—</div>
+      <div id="serial-host">—</div>
+    </div>
+  </header>
+
+  <!-- Bandeau de métadonnées du run -->
+  <section class="run-meta data-zone" aria-label="Métadonnées du run">
+    <dl><dt>Modèle</dt><dd id="meta-model">—</dd></dl>
+    <dl><dt>Endpoint</dt><dd id="meta-endpoint">—</dd></dl>
+    <dl><dt>Runs latence</dt><dd id="meta-runs">—</dd></dl>
+    <dl><dt>Échantillon</dt><dd id="meta-sample">—</dd></dl>
+  </section>
+
+  <input type="file" id="file-input" accept="application/json,.json" hidden />
+
+  <!-- ───── Section 1 : Métriques-mères ───── -->
+  <section class="section data-zone">
+    <div class="section-rule">
+      <span class="num">§ 01</span>
+      <h2>Métriques-mères</h2>
+      <span class="line"></span>
+      <span class="stamp">médianes</span>
+    </div>
+
+    <div class="dials">
+      <!-- Carte hero : Latence (TTFT + TPOT) -->
+      <article class="dial dial--hero">
+        <div class="dial-head">
+          <span class="dial-label">Latence</span>
+        </div>
+        <div class="dial-value-pair">
+          <div class="sub-dial">
+            <span class="dial-label">TTFT médian</span>
+            <div class="dial-value">
+              <span id="m-ttft">—</span><span class="unit">ms</span>
+            </div>
+          </div>
+          <div class="sep" aria-hidden="true"></div>
+          <div class="sub-dial">
+            <span class="dial-label">TPOT médian</span>
+            <div class="dial-value">
+              <span id="m-tpot">—</span><span class="unit">ms/tok</span>
+            </div>
+          </div>
+        </div>
+        <div class="dial-footer">
+          <span><span class="k">TTFT</span><span id="m-ttft-range">—</span> ms</span>
+          <span><span class="k">TPOT</span><span id="m-tpot-range">—</span> ms/tok</span>
+          <span><span class="k">débit 1×</span><span id="m-tps-single">—</span> tok/s</span>
+        </div>
+      </article>
+
+      <!-- Carte débit -->
+      <article class="dial">
+        <div class="dial-head">
+          <span class="dial-label">Débit système</span>
+        </div>
+        <div class="dial-value">
+          <span id="m-tput">—</span><span class="unit">tok/s</span>
+        </div>
+        <div class="dial-footer">
+          <span><span class="k">pic à conc.</span><span id="m-tput-conc">—</span></span>
+        </div>
+      </article>
+
+      <!-- Carte coût -->
+      <article class="dial">
+        <div class="dial-head">
+          <span class="dial-label">Coût · $/1M tok out</span>
+        </div>
+        <div class="dial-value">
+          <span class="unit" style="margin-right: 2px;">$</span><span id="m-cost">—</span>
+        </div>
+        <div class="dial-footer">
+          <span><span class="k">tarif in</span>$<span id="m-cost-in">—</span></span>
+          <span><span class="k">tarif out</span>$<span id="m-cost-out">—</span></span>
+        </div>
+      </article>
+
+      <!-- Carte VRAM (s'efface si non dispo) -->
+      <article class="dial" id="dial-vram">
+        <div class="dial-head">
+          <span class="dial-label">VRAM peak</span>
+        </div>
+        <div class="dial-value">
+          <span id="m-vram">—</span><span class="unit">MiB</span>
+        </div>
+        <div class="dial-footer">
+          <span><span class="k">/ tot.</span><span id="m-vram-tot">—</span> MiB</span>
+          <span><span class="k">GPU util.</span><span id="m-gpu-util">—</span> %</span>
+        </div>
+      </article>
+    </div>
+  </section>
+
+  <!-- ───── Section 2 : Courbe latence/débit ───── -->
+  <section class="section data-zone">
+    <div class="section-rule">
+      <span class="num">§ 02</span>
+      <h2>Courbe latence / débit</h2>
+      <span class="line"></span>
+      <span class="stamp">sweep de concurrence</span>
+    </div>
+
+    <div class="plot">
+      <div class="plot-head">
+        <div class="plot-axes-legend">
+          <span class="y">débit système (tok/s)</span>
+          <span class="y2">TTFT médian (ms)</span>
+        </div>
+      </div>
+
+      <svg class="plot-svg" id="plot" viewBox="0 0 900 380"
+           preserveAspectRatio="xMidYMid meet" role="img"
+           aria-labelledby="plot-title plot-desc">
+        <title id="plot-title">Courbe latence/débit système</title>
+        <desc id="plot-desc">Débit système (axe gauche, ochre) et TTFT médian (axe droit, terracotta) en fonction du niveau de concurrence (axe X logarithmique).</desc>
+      </svg>
+
+      <p class="plot-legend">
+        Lecture : à concurrence faible, la latence est basse mais le débit
+        plafonne. À concurrence élevée, le débit système monte jusqu'à un
+        coude — au-delà, la file d'attente s'allonge et le TTFT explose.
+        Le bon point d'opération est <b>juste avant ce coude</b>.
+      </p>
+    </div>
+  </section>
+
+  <!-- ───── Section 3 : runs bruts ───── -->
+  <section class="section data-zone">
+    <div class="section-rule">
+      <span class="num">§ 03</span>
+      <h2>Runs individuels</h2>
+      <span class="line"></span>
+      <span class="stamp">traçabilité</span>
+    </div>
+
+    <table class="runs-table" id="runs-table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>TTFT (ms)</th>
+          <th>TPOT (ms/tok)</th>
+          <th>Total (ms)</th>
+          <th>Tokens out</th>
+          <th>Input tok</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </section>
+
+  <footer class="colophon">
+    <span><button type="button" class="link" id="load-link">charger un relevé</button> — ou glisse-le sur la page <span id="load-status" role="status" aria-live="polite"></span></span>
+    <span>draft-gaikwad-llm-benchmarking-terminology · MIT</span>
+  </footer>
+
+</main>
+
+<script>
+// ──────────────────────────────────────────────────────────────────────
+// État + données de démo (utilisées si la page est ouverte sans report)
+// ──────────────────────────────────────────────────────────────────────
+
+const DEMO = {
+  "model": "gpt-4o-mini",
+  "base_url": "https://api.openai.com/v1",
+  "timestamp_utc": "2026-05-31T14:22:08Z",
+  "host": { "platform": "Darwin-25.2.0-arm64", "python": "3.12.4", "machine": "arm64" },
+  "latency_summary": {
+    "n_runs": 5,
+    "ttft_median_ms": 212.4,
+    "ttft_min_ms": 198.1,
+    "ttft_max_ms": 245.6,
+    "tpot_median_ms": 23.8,
+    "tokens_per_sec_median": 42.0
+  },
+  "latency_runs": [
+    { "ttft_ms": 198.1, "tpot_ms": 23.1, "total_ms": 3134.7, "n_output_tokens": 128, "usage_input_tokens": 38, "usage_output_tokens": 128 },
+    { "ttft_ms": 212.4, "tpot_ms": 23.8, "total_ms": 3198.3, "n_output_tokens": 128, "usage_input_tokens": 38, "usage_output_tokens": 128 },
+    { "ttft_ms": 209.7, "tpot_ms": 23.5, "total_ms": 3168.5, "n_output_tokens": 128, "usage_input_tokens": 38, "usage_output_tokens": 128 },
+    { "ttft_ms": 245.6, "tpot_ms": 24.4, "total_ms": 3346.4, "n_output_tokens": 128, "usage_input_tokens": 38, "usage_output_tokens": 128 },
+    { "ttft_ms": 215.0, "tpot_ms": 23.6, "total_ms": 3210.1, "n_output_tokens": 128, "usage_input_tokens": 38, "usage_output_tokens": 128 }
+  ],
+  "throughput_curve": [
+    { "concurrency": 1,  "wall_time_s": 3.05, "total_output_tokens": 128,  "system_tokens_per_sec":  42.0, "ttft_median_ms": 205, "tpot_median_ms": 23.7 },
+    { "concurrency": 2,  "wall_time_s": 3.21, "total_output_tokens": 256,  "system_tokens_per_sec":  79.8, "ttft_median_ms": 248, "tpot_median_ms": 24.1 },
+    { "concurrency": 4,  "wall_time_s": 3.45, "total_output_tokens": 512,  "system_tokens_per_sec": 148.6, "ttft_median_ms": 410, "tpot_median_ms": 24.9 },
+    { "concurrency": 8,  "wall_time_s": 4.10, "total_output_tokens": 1024, "system_tokens_per_sec": 249.8, "ttft_median_ms": 712, "tpot_median_ms": 27.4 },
+    { "concurrency": 16, "wall_time_s": 6.05, "total_output_tokens": 2048, "system_tokens_per_sec": 338.5, "ttft_median_ms": 1480, "tpot_median_ms": 33.1 },
+    { "concurrency": 32, "wall_time_s": 11.20, "total_output_tokens": 4096, "system_tokens_per_sec": 365.7, "ttft_median_ms": 3120, "tpot_median_ms": 41.8 }
+  ],
+  "throughput_best_tokens_per_sec": 365.7,
+  "throughput_best_concurrency": 32,
+  "cost": {
+    "model": "gpt-4o-mini",
+    "price_in_per_mtok": 0.15, "price_out_per_mtok": 0.60,
+    "input_tokens": 190, "output_tokens": 640,
+    "cost_input_usd": 0.0000285, "cost_output_usd": 0.000384,
+    "cost_total_usd": 0.0004125,
+    "effective_dollars_per_mtok_out": 0.6445
+  },
+  "resources": {
+    "available": false,
+    "reason": "nvidia-smi introuvable (CPU-only ou pas de GPU NVIDIA)",
+    "vram_used_peak_mib": 0,
+    "vram_total_mib": 0,
+    "util_gpu_peak_pct": 0
+  }
+};
+
+// ──────────────────────────────────────────────────────────────────────
+// Helpers de formatage
+// ──────────────────────────────────────────────────────────────────────
+
+const fmt = {
+  int: n => (n == null || isNaN(n)) ? "—" : Math.round(n).toLocaleString("fr-FR"),
+  dec: (n, d = 1) => (n == null || isNaN(n)) ? "—" : n.toFixed(d),
+  money: n => (n == null || isNaN(n)) ? "—" : n.toFixed(2),
+};
+
+function shortHost(url) {
+  try { return new URL(url).host; } catch { return url || "—"; }
+}
+
+// ──────────────────────────────────────────────────────────────────────
+// Rendu des cadrans
+// ──────────────────────────────────────────────────────────────────────
+
+function render(report) {
+  const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+
+  // En-tête
+  set("serial-ts", report.timestamp_utc || "—");
+  set("serial-host", report.host?.machine
+    ? `${report.host.platform?.split("-")[0] || "host"} · ${report.host.machine}`
+    : "—");
+  set("meta-model", report.model || "—");
+  set("meta-endpoint", shortHost(report.base_url));
+  set("meta-runs", report.latency_summary ? `${report.latency_summary.n_runs} runs` : "—");
+  const sampleTok = report.latency_runs?.[0]?.n_output_tokens;
+  set("meta-sample", sampleTok ? `${sampleTok} tok / run` : "—");
+
+  // Latence — symétrie TTFT/TPOT calculée client-side depuis les runs.
+  const s = report.latency_summary || {};
+  const runs = report.latency_runs || [];
+  const ttfts = runs.map(r => r.ttft_ms).filter(Number.isFinite);
+  const tpots = runs.map(r => r.tpot_ms).filter(Number.isFinite);
+  const rng = arr => arr.length ? `${fmt.dec(Math.min(...arr), 0)}–${fmt.dec(Math.max(...arr), 0)}` : "—";
+  set("m-ttft", fmt.int(s.ttft_median_ms));
+  set("m-tpot", fmt.dec(s.tpot_median_ms, 1));
+  set("m-ttft-range", ttfts.length ? rng(ttfts) : `${fmt.int(s.ttft_min_ms)}–${fmt.int(s.ttft_max_ms)}`);
+  set("m-tpot-range", tpots.length ? rng(tpots) : "—");
+  set("m-tps-single", fmt.int(s.tokens_per_sec_median));
+
+  // Débit
+  set("m-tput", fmt.int(report.throughput_best_tokens_per_sec));
+  set("m-tput-conc", report.throughput_best_concurrency ?? "—");
+
+  // Coût
+  const c = report.cost || {};
+  if (c.error || c.effective_dollars_per_mtok_out == null) {
+    set("m-cost", "—"); set("m-cost-in", "—"); set("m-cost-out", "—");
+  } else {
+    set("m-cost", fmt.money(c.effective_dollars_per_mtok_out));
+    set("m-cost-in", (c.price_in_per_mtok ?? 0).toFixed(2));
+    set("m-cost-out", (c.price_out_per_mtok ?? 0).toFixed(2));
+  }
+
+  // VRAM — la carte se met en sourdine si la mesure est indispo.
+  const r = report.resources || {};
+  const dialVram = document.getElementById("dial-vram");
+  dialVram?.classList.toggle("dial--inactive", !r.available);
+  if (r.available) {
+    set("m-vram", fmt.int(r.vram_used_peak_mib));
+    set("m-vram-tot", fmt.int(r.vram_total_mib));
+    set("m-gpu-util", fmt.int(r.util_gpu_peak_pct));
+  } else {
+    set("m-vram", "n/d");
+    set("m-vram-tot", "—");
+    set("m-gpu-util", "—");
+  }
+
+  drawPlot(report.throughput_curve || []);
+  drawRuns(report.latency_runs || []);
+}
+
+// ──────────────────────────────────────────────────────────────────────
+// Tracé SVG : courbe latence/débit
+// ──────────────────────────────────────────────────────────────────────
+
+function drawPlot(points) {
+  const svg = document.getElementById("plot");
+  // Préserve <title>/<desc> (a11y), retire le reste.
+  [...svg.children].forEach(c => {
+    if (c.tagName !== "title" && c.tagName !== "desc") c.remove();
+  });
+
+  if (!points.length) {
+    const t = el("text", { x: 450, y: 190, "text-anchor": "middle", fill: "var(--ink-mute)" });
+    t.textContent = "Pas de sweep de débit dans ce relevé.";
+    svg.appendChild(t);
+    return;
+  }
+
+  // Marges intérieures du plot
+  const W = 900, H = 380;
+  const M = { t: 24, r: 70, b: 56, l: 64 };
+  const innerW = W - M.l - M.r;
+  const innerH = H - M.t - M.b;
+
+  const xs = points.map(p => p.concurrency);
+  const tputs = points.map(p => p.system_tokens_per_sec);
+  const ttfts = points.map(p => p.ttft_median_ms);
+
+  const xMin = Math.min(...xs), xMax = Math.max(...xs);
+  const tputMax = roundUpNice(Math.max(...tputs));
+  const ttftMax = roundUpNice(Math.max(...ttfts));
+
+  // Échelle log pour l'axe X (concurrence se lit naturellement en log)
+  const xScale = c => M.l + (Math.log2(c) - Math.log2(xMin)) /
+                              (Math.log2(xMax) - Math.log2(xMin)) * innerW;
+  const yTput = v => M.t + innerH - (v / tputMax) * innerH;
+  const yTtft = v => M.t + innerH - (v / ttftMax) * innerH;
+
+  // Grille horizontale (5 niveaux)
+  for (let i = 0; i <= 4; i++) {
+    const y = M.t + (innerH * i / 4);
+    svg.appendChild(el("line", { class: "grid-line", x1: M.l, x2: M.l + innerW, y1: y, y2: y }));
+  }
+
+  // Axes
+  svg.appendChild(el("line", { class: "axis-line", x1: M.l, x2: M.l + innerW, y1: M.t + innerH, y2: M.t + innerH }));
+  svg.appendChild(el("line", { class: "axis-line", x1: M.l, x2: M.l, y1: M.t, y2: M.t + innerH }));
+  svg.appendChild(el("line", { class: "axis-line", x1: M.l + innerW, x2: M.l + innerW, y1: M.t, y2: M.t + innerH }));
+
+  // Ticks X : un par point (concurrence)
+  xs.forEach(c => {
+    const x = xScale(c);
+    svg.appendChild(el("line", { class: "tick", x1: x, x2: x, y1: M.t + innerH, y2: M.t + innerH + 6 }));
+    const t = el("text", { class: "tick-label", x, y: M.t + innerH + 20, "text-anchor": "middle" });
+    t.textContent = c;
+    svg.appendChild(t);
+  });
+  const xTitle = el("text", { class: "axis-title", x: M.l + innerW / 2, y: H - 14, "text-anchor": "middle" });
+  xTitle.textContent = "CONCURRENCE";
+  svg.appendChild(xTitle);
+
+  // Ticks Y gauche (débit, ochre)
+  for (let i = 0; i <= 4; i++) {
+    const v = tputMax * (i / 4);
+    const y = yTput(v);
+    const t = el("text", { class: "tick-label", x: M.l - 8, y: y + 4, "text-anchor": "end" });
+    t.textContent = Math.round(v);
+    svg.appendChild(t);
+  }
+  // Ticks Y droite (TTFT, terracotta)
+  for (let i = 0; i <= 4; i++) {
+    const v = ttftMax * (i / 4);
+    const y = yTtft(v);
+    const t = el("text", { class: "tick-label", x: M.l + innerW + 8, y: y + 4, "text-anchor": "start" });
+    t.textContent = Math.round(v);
+    svg.appendChild(t);
+  }
+
+  // Courbes (path)
+  const pathTput = points.map((p, i) =>
+    (i === 0 ? "M" : "L") + xScale(p.concurrency).toFixed(1) + " " + yTput(p.system_tokens_per_sec).toFixed(1)).join(" ");
+  svg.appendChild(el("path", { class: "curve-tput", d: pathTput }));
+
+  const pathTtft = points.map((p, i) =>
+    (i === 0 ? "M" : "L") + xScale(p.concurrency).toFixed(1) + " " + yTtft(p.ttft_median_ms).toFixed(1)).join(" ");
+  svg.appendChild(el("path", { class: "curve-ttft", d: pathTtft }));
+
+  // Points
+  points.forEach(p => {
+    svg.appendChild(el("circle", { class: "point tput", cx: xScale(p.concurrency), cy: yTput(p.system_tokens_per_sec), r: 3.5 }));
+    svg.appendChild(el("circle", { class: "point ttft", cx: xScale(p.concurrency), cy: yTtft(p.ttft_median_ms), r: 3.5 }));
+  });
+
+  // Annotation : pic de débit
+  const best = points.reduce((a, b) => a.system_tokens_per_sec > b.system_tokens_per_sec ? a : b);
+  const bx = xScale(best.concurrency), by = yTput(best.system_tokens_per_sec);
+  svg.appendChild(el("line", { class: "annot-line", x1: bx, x2: bx, y1: by - 4, y2: M.t + 14 }));
+  const annot = el("text", { class: "annot", x: bx, y: M.t + 8, "text-anchor": "middle" });
+  annot.textContent = `▼ pic ${Math.round(best.system_tokens_per_sec)} tok/s · conc ${best.concurrency}`;
+  svg.appendChild(annot);
+}
+
+function el(tag, attrs) {
+  const n = document.createElementNS("http://www.w3.org/2000/svg", tag);
+  for (const k in attrs) n.setAttribute(k, attrs[k]);
+  return n;
+}
+
+function roundUpNice(v) {
+  if (v <= 0) return 1;
+  const pow = Math.pow(10, Math.floor(Math.log10(v)));
+  const n = v / pow;
+  let step;
+  if (n <= 1) step = 1;
+  else if (n <= 2) step = 2;
+  else if (n <= 5) step = 5;
+  else step = 10;
+  return step * pow;
+}
+
+// ──────────────────────────────────────────────────────────────────────
+// Table des runs
+// ──────────────────────────────────────────────────────────────────────
+
+function drawRuns(runs) {
+  const tbody = document.querySelector("#runs-table tbody");
+  tbody.innerHTML = "";
+  runs.forEach((r, i) => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${String(i + 1).padStart(2, "0")}</td>
+      <td>${fmt.dec(r.ttft_ms, 1)}</td>
+      <td>${r.tpot_ms == null ? "n/a" : fmt.dec(r.tpot_ms, 1)}</td>
+      <td>${fmt.dec(r.total_ms, 1)}</td>
+      <td>${r.usage_output_tokens ?? r.n_output_tokens ?? "—"}</td>
+      <td>${r.usage_input_tokens ?? "—"}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+// ──────────────────────────────────────────────────────────────────────
+// Chargement fichier (drop + click)
+// ──────────────────────────────────────────────────────────────────────
+
+const fi = document.getElementById("file-input");
+fi?.addEventListener("change", e => readFile(e.target.files[0]));
+
+document.getElementById("load-link")?.addEventListener("click", e => {
+  e.preventDefault(); fi.click();
+});
+
+// Drop n'importe où sur la page
+["dragenter", "dragover"].forEach(ev =>
+  document.addEventListener(ev, e => { e.preventDefault(); document.body.style.outline = "1px dashed var(--copper)"; document.body.style.outlineOffset = "-12px"; }));
+["dragleave", "drop"].forEach(ev =>
+  document.addEventListener(ev, e => { e.preventDefault(); document.body.style.outline = ""; }));
+document.addEventListener("drop", e => {
+  const f = e.dataTransfer.files?.[0];
+  if (f) readFile(f);
+});
+
+function setStatus(msg, isError = false) {
+  const el = document.getElementById("load-status");
+  if (!el) return;
+  el.textContent = msg ? ` · ${msg}` : "";
+  el.style.color = isError ? "var(--terracotta)" : "var(--ink-soft)";
+}
+
+function readFile(file) {
+  if (!file) return;
+  const fr = new FileReader();
+  fr.onload = () => {
+    try {
+      render(JSON.parse(fr.result));
+      setStatus(`chargé : ${file.name}`);
+    } catch (err) {
+      setStatus(`JSON invalide — ${err.message}`, true);
+    }
+  };
+  fr.readAsText(file);
+}
+
+// On rend la démo immédiatement — la page est jolie même sans fichier.
+render(DEMO);
+</script>
+
+</body>
+</html>
