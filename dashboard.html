@@ -119,6 +119,19 @@ button.link {
   text-transform: uppercase;
   margin-top: var(--space-md);
 }
+.demo-badge {
+  display: inline-block;
+  margin-left: var(--space-sm);
+  padding: 2px 8px;
+  border: 1px solid var(--copper);
+  border-radius: 2px;
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  color: var(--copper);
+  text-transform: uppercase;
+  vertical-align: middle;
+}
+body.has-real-data .demo-badge { display: none; }
 
 .serial {
   font-family: var(--font);
@@ -475,7 +488,7 @@ svg.plot-svg .annot-line { stroke: var(--copper); stroke-width: 1; stroke-dashar
 
   <header class="masthead">
     <div>
-      <h1><span id="hd-model">—</span><span class="sub" id="hd-sub">relevé d'inférence</span></h1>
+      <h1><span id="hd-model">—</span><span class="demo-badge" id="demo-badge">démo</span><span class="sub" id="hd-sub">relevé d'inférence</span></h1>
     </div>
     <div class="serial">
       <div><b>infer-metrics</b></div>
@@ -915,6 +928,12 @@ function roundUpNice(v) {
 function drawRuns(runs) {
   const tbody = document.querySelector("#runs-table tbody");
   tbody.innerHTML = "";
+  if (!runs.length) {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `<td colspan="6" style="text-align:center;color:var(--ink-mute);padding:var(--space-lg);font-style:italic;">aucun run de latence enregistré</td>`;
+    tbody.appendChild(tr);
+    return;
+  }
   runs.forEach((r, i) => {
     const tr = document.createElement("tr");
     tr.innerHTML = `
@@ -963,9 +982,10 @@ function readFile(file) {
   fr.onload = () => {
     try {
       render(JSON.parse(fr.result));
-      setStatus(`chargé : ${file.name}`);
+      document.body.classList.add("has-real-data");
+      setStatus(`chargé · ${file.name}`);
     } catch (err) {
-      setStatus(`JSON invalide — ${err.message}`, true);
+      setStatus(`JSON invalide · ${err.message}`, true);
     }
   };
   fr.readAsText(file);
@@ -1012,22 +1032,117 @@ if (location.protocol === "http:" || location.protocol === "https:") {
     dot.style.background = "var(--terracotta)";
     dot.style.boxShadow = "0 0 8px var(--terracotta)";
   };
+  // Rapport partiel — se remplit au fil des events et déclenche un render()
+  const live = {
+    model: null, base_url: null, timestamp_utc: null, host: {},
+    latency_summary: null, latency_runs: [],
+    throughput_curve: [],
+    throughput_best_tokens_per_sec: null,
+    throughput_best_concurrency: null,
+    cost: null, resources: null,
+    _planned: { latency: 0, concurrencies: [] },
+  };
+
+  function median(arr) {
+    const a = arr.filter(x => x != null && !isNaN(x)).slice().sort((x, y) => x - y);
+    if (!a.length) return null;
+    const m = Math.floor(a.length / 2);
+    return a.length % 2 ? a[m] : (a[m - 1] + a[m]) / 2;
+  }
+
+  function recomputeLatencySummary() {
+    const runs = live.latency_runs;
+    if (!runs.length) { live.latency_summary = null; return; }
+    const ttfts = runs.map(r => r.ttft_ms);
+    const tpots = runs.map(r => r.tpot_ms).filter(x => x != null);
+    const tpotMed = median(tpots);
+    live.latency_summary = {
+      n_runs: runs.length,
+      ttft_median_ms: median(ttfts),
+      ttft_min_ms: Math.min(...ttfts),
+      ttft_max_ms: Math.max(...ttfts),
+      tpot_median_ms: tpotMed,
+      tokens_per_sec_median: tpotMed ? 1000 / tpotMed : null,
+    };
+  }
+
+  function recomputeThroughputBest() {
+    if (!live.throughput_curve.length) return;
+    const best = live.throughput_curve.reduce(
+      (a, b) => (b.system_tokens_per_sec > a.system_tokens_per_sec ? b : a)
+    );
+    live.throughput_best_tokens_per_sec = best.system_tokens_per_sec;
+    live.throughput_best_concurrency = best.concurrency;
+  }
+
+  let lastRender = 0;
+  function paint() {
+    // throttle léger pour éviter de spammer le DOM
+    const now = performance.now();
+    if (now - lastRender < 80) return;
+    lastRender = now;
+    try { render(live); setStatus("live"); } catch (e) { /* skip */ }
+  }
+
   es.onmessage = (m) => {
     let ev;
     try { ev = JSON.parse(m.data); } catch { return; }
+
+    if (ev.type === "meta") {
+      live.model = ev.model;
+      live.base_url = ev.base_url;
+      live.timestamp_utc = ev.timestamp_utc;
+      live._planned = {
+        latency: ev.latency_runs_planned || 0,
+        concurrencies: ev.concurrencies_planned || [],
+      };
+      paint();
+      return;
+    }
+
     if (ev.type === "stage") {
       s.textContent = `étape : ${ev.name}`;
-    } else if (ev.type === "latency_run") {
+      return;
+    }
+
+    if (ev.type === "latency_run") {
       const r = ev.result || {};
-      const ttft = r.ttft_ms ?? r.ttft_first_token_ms;
-      const tpot = r.tpot_ms_per_token ?? r.tpot_ms;
+      live.latency_runs.push({
+        ttft_ms: r.ttft_ms,
+        tpot_ms: r.tpot_ms ?? r.tpot_ms_per_token,
+        total_ms: r.total_ms,
+        n_output_tokens: r.n_output_tokens,
+        usage_input_tokens: r.usage_input_tokens,
+        usage_output_tokens: r.usage_output_tokens,
+      });
+      recomputeLatencySummary();
       s.textContent = `latence ${ev.i}/${ev.n}`;
-      p.textContent = `TTFT ${ttft?.toFixed?.(0) ?? "—"} ms · TPOT ${tpot?.toFixed?.(1) ?? "—"} ms/tok`;
-    } else if (ev.type === "throughput_point") {
+      const tpotDisp = live.latency_summary.tpot_median_ms?.toFixed?.(1) ?? "—";
+      const ttftDisp = live.latency_summary.ttft_median_ms?.toFixed?.(0) ?? "—";
+      p.textContent = `TTFT méd. ${ttftDisp} ms · TPOT méd. ${tpotDisp} ms/tok`;
+      paint();
+      return;
+    }
+
+    if (ev.type === "throughput_point") {
       const pt = ev.point || {};
+      live.throughput_curve.push({
+        concurrency: pt.concurrency,
+        n_requests: pt.n_requests,
+        wall_time_s: pt.wall_time_s,
+        total_output_tokens: pt.total_output_tokens,
+        system_tokens_per_sec: pt.system_tokens_per_sec,
+        ttft_median_ms: pt.ttft_median_ms,
+        tpot_median_ms: pt.tpot_median_ms,
+      });
+      recomputeThroughputBest();
       s.textContent = `débit · conc=${pt.concurrency}`;
-      p.textContent = `${pt.system_tokens_per_sec?.toFixed?.(1) ?? "—"} tok/s`;
-    } else if (ev.type === "done") {
+      p.textContent = `${pt.system_tokens_per_sec?.toFixed?.(1) ?? "—"} tok/s · pic ${live.throughput_best_tokens_per_sec?.toFixed?.(1) ?? "—"} tok/s`;
+      paint();
+      return;
+    }
+
+    if (ev.type === "done") {
       s.innerHTML = `<span style="color:var(--moss);font-weight:500">✓ terminé</span>`;
       p.textContent = "";
       dot.style.background = "var(--moss)";

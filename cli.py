@@ -203,6 +203,15 @@ def cmd_report(args) -> int:
         url_host = "localhost" if args.serve_host in ("0.0.0.0", "") else args.serve_host
         print(f"\n● Live dashboard : http://{url_host}:{args.serve_port}")
         print("   (Ctrl-C pour arrêter)\n")
+        import time as _t
+        bus.publish({
+            "type": "meta",
+            "model": args.model,
+            "base_url": args.base_url,
+            "timestamp_utc": _t.strftime("%Y-%m-%dT%H:%M:%SZ", _t.gmtime()),
+            "latency_runs_planned": args.runs,
+            "concurrencies_planned": concurrencies or [],
+        })
 
     def on_event(stage, payload):
         if stage == "stage":
