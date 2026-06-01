@@ -15,7 +15,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from .latency import LatencyResult
+from latency import LatencyResult
 
 
 # Tarifs publics en $ / 1M tokens (input, output).

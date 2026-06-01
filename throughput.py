@@ -23,7 +23,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass, field
 from statistics import median
 
-from .latency import LatencyResult, measure_latency_once
+from latency import LatencyResult, measure_latency_once
 
 
 @dataclass

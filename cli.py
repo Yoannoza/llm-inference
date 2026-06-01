@@ -20,12 +20,12 @@ import json
 import os
 import sys
 
-from .cost import compute_cost, cost_from_results
-from .latency import measure_latency_once, summarize
-from .live import EventBus, adapt_event, start_server
-from .report import report_to_json, run_full_report
-from .resources import VRAMMonitor
-from .throughput import sweep_throughput
+from cost import compute_cost, cost_from_results
+from latency import measure_latency_once, summarize
+from live import EventBus, adapt_event, start_server
+from report import report_to_json, run_full_report
+from resources import VRAMMonitor
+from throughput import sweep_throughput
 
 
 DEFAULT_PROMPT = (

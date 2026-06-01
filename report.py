@@ -17,10 +17,10 @@ import time
 from dataclasses import asdict, dataclass, field
 from typing import Any
 
-from .cost import CostBreakdown, cost_from_results
-from .latency import LatencyResult, measure_latency_once, summarize
-from .resources import ResourceUsage, VRAMMonitor
-from .throughput import ThroughputPoint, sweep_throughput
+from cost import CostBreakdown, cost_from_results
+from latency import LatencyResult, measure_latency_once, summarize
+from resources import ResourceUsage, VRAMMonitor
+from throughput import ThroughputPoint, sweep_throughput
 
 
 @dataclass
