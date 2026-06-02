@@ -13,12 +13,23 @@ Définitions (alignées sur le draft IETF draft-gaikwad-llm-benchmarking-termino
 from __future__ import annotations
 
 import json
+import os
+import sys
 import time
 from dataclasses import dataclass
 from statistics import median
 from typing import Iterable
 
 import httpx
+
+
+# Active du debug verbeux via : INFER_DEBUG=1 python -m cli ...
+_DEBUG = os.environ.get("INFER_DEBUG") not in (None, "", "0", "false", "False")
+
+
+def _dbg(msg: str) -> None:
+    if _DEBUG:
+        print(f"  [debug] {msg}", file=sys.stderr, flush=True)
 
 
 @dataclass
@@ -89,22 +100,38 @@ def measure_latency_once(
     n_tokens = 0
     usage_in: int | None = None
     usage_out: int | None = None
+    n_lines = 0
+    n_chunks_parsed = 0
+    n_chunks_empty_delta = 0
+    last_raw_seen: str | None = None
+
+    _dbg(f"POST {url}")
+    _dbg(f"payload = {json.dumps(payload, ensure_ascii=False)[:280]}")
 
     with httpx.stream(
         "POST", url, headers=headers, json=payload, timeout=timeout
     ) as response:
+        _dbg(f"status = {response.status_code}, "
+             f"content-type = {response.headers.get('content-type')}")
         response.raise_for_status()
         for raw_line in response.iter_lines():
+            n_lines += 1
             if not raw_line:
                 continue
+            last_raw_seen = raw_line
+            if _DEBUG and n_lines <= 6:
+                _dbg(f"line[{n_lines}] {raw_line[:200]}")
             # Le format SSE OpenAI préfixe chaque ligne par "data: ".
             line = raw_line.removeprefix("data: ").strip()
             if line == "[DONE]":
+                _dbg("[DONE] reçu")
                 break
             try:
                 chunk = json.loads(line)
-            except json.JSONDecodeError:
+            except json.JSONDecodeError as e:
+                _dbg(f"JSON ko : {e} sur {line[:80]!r}")
                 continue
+            n_chunks_parsed += 1
 
             usage = chunk.get("usage")
             if usage:
@@ -118,11 +145,21 @@ def measure_latency_once(
                 if t_first is None:
                     t_first = time.perf_counter()
                 n_tokens += 1
+            else:
+                n_chunks_empty_delta += 1
 
     t_end = time.perf_counter()
 
+    _dbg(f"fini : lignes={n_lines}, chunks_json={n_chunks_parsed}, "
+         f"deltas_vides={n_chunks_empty_delta}, tokens={n_tokens}")
+
     if t_first is None:
-        raise RuntimeError("Aucun token reçu — vérifier l'API, le modèle, la clé.")
+        raise RuntimeError(
+            "Aucun token reçu — vérifier l'API, le modèle, la clé. "
+            f"[diag : {n_lines} lignes SSE, {n_chunks_parsed} chunks JSON, "
+            f"{n_chunks_empty_delta} deltas sans content, "
+            f"dernière ligne brute : {str(last_raw_seen)[:160]!r}]"
+        )
 
     ttft_ms = (t_first - t_start) * 1000
     total_ms = (t_end - t_start) * 1000
