@@ -140,13 +140,24 @@ def measure_latency_once(
 
             choices = chunk.get("choices") or [{}]
             delta = choices[0].get("delta", {}) if choices else {}
-            content = delta.get("content")
+            # Certains serveurs (llama.cpp avec modèles "reasoning" type Gemma 4)
+            # n'envoient rien dans `content` : tout passe par `reasoning_content`
+            # ou `text`. On accepte toutes ces variantes comme "un token".
+            content = (
+                delta.get("content")
+                or delta.get("reasoning_content")
+                or delta.get("text")
+            )
             if content:
                 if t_first is None:
                     t_first = time.perf_counter()
                 n_tokens += 1
+                if _DEBUG and n_tokens <= 3:
+                    _dbg(f"token[{n_tokens}] = {content!r}")
             else:
                 n_chunks_empty_delta += 1
+                if _DEBUG and n_chunks_empty_delta <= 2:
+                    _dbg(f"delta vide, clés présentes : {list(delta.keys())}")
 
     t_end = time.perf_counter()
 
