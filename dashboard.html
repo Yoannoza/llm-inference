@@ -258,27 +258,43 @@ body.has-real-data .demo-badge { display: none; }
 .dial--inactive .dial-footer { opacity: 0.5; }
 
 .dial-head {
-  margin-bottom: var(--space-md);
+  margin-bottom: auto;
+  padding-bottom: var(--space-md);
 }
 
 .dial-label {
   font-family: var(--font);
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--ink-soft);
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+}
+/* Famille = mot dominant : plus gros, brillant, teinté famille, avec bullet */
+.dial-label .fam {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--family, var(--ink));
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
 }
-/* Petit marqueur de famille (point de couleur) à côté du label */
-.dial-label::before {
+.dial-label .fam::before {
   content: "";
-  width: 6px; height: 6px;
+  width: 7px; height: 7px;
   border-radius: 50%;
   background: var(--family, var(--copper));
   flex-shrink: 0;
+}
+/* Métrique précise : sous la famille, indentée pour s'aligner après le bullet */
+.dial-label .metric-qual {
+  font-size: 10.5px;
+  font-weight: 500;
+  color: var(--ink-mute);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  margin-left: 17px;
 }
 
 /* Définition pédagogique : ce que la métrique mesure, en une ligne */
@@ -340,7 +356,7 @@ body.has-real-data .demo-badge { display: none; }
 .dial--hero .sub-dial .dial-value { font-size: clamp(56px, 7vw, 92px); }
 
 .dial-footer {
-  margin-top: auto;
+  margin-top: var(--space-md);
   padding-top: var(--space-md);
   border-top: 1px solid var(--hairline);
   display: flex;
@@ -350,77 +366,6 @@ body.has-real-data .demo-badge { display: none; }
   color: var(--ink-soft);
 }
 .dial-footer .k { color: var(--ink-mute); margin-right: var(--space-xs); }
-
-/* ─── Courbe latence/débit (SVG natif) ────────────────────────────── */
-
-.plot {
-  background: var(--bg-elev-1);
-  border: 1px solid var(--hairline);
-  border-radius: 2px;
-  padding: var(--space-xl) var(--space-xl) var(--space-lg);
-}
-
-.plot-head {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  margin-bottom: var(--space-md);
-  flex-wrap: wrap;
-  gap: var(--space-md);
-}
-
-.plot-axes-legend {
-  font-family: var(--font);
-  font-size: 11px;
-  letter-spacing: 0.1em;
-  color: var(--ink-mute);
-  text-transform: uppercase;
-  display: flex;
-  gap: var(--space-md);
-}
-.plot-axes-legend span::before {
-  content: "■";
-  margin-right: 6px;
-}
-.plot-axes-legend .y::before { color: var(--ochre); }
-.plot-axes-legend .y2::before { color: var(--terracotta); }
-
-svg.plot-svg {
-  width: 100%;
-  height: auto;
-  display: block;
-  font-family: var(--font);
-  font-size: 11px;
-}
-svg.plot-svg .grid-line { stroke: var(--hairline); stroke-width: 1; }
-svg.plot-svg .axis-line { stroke: var(--hairline-2); stroke-width: 1; }
-svg.plot-svg .tick { stroke: var(--ink-faint); stroke-width: 1; }
-svg.plot-svg .tick-label { fill: var(--ink-mute); font-size: 10.5px; }
-svg.plot-svg .axis-title {
-  fill: var(--ink-soft);
-  font-size: 11px;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-}
-svg.plot-svg .curve-tput { stroke: var(--ochre); stroke-width: 1.5; fill: none; }
-svg.plot-svg .curve-ttft { stroke: var(--terracotta); stroke-width: 1.5; fill: none; stroke-dasharray: 4 3; }
-svg.plot-svg .point { fill: var(--bg); stroke-width: 1.5; }
-svg.plot-svg .point.tput { stroke: var(--ochre); }
-svg.plot-svg .point.ttft { stroke: var(--terracotta); }
-svg.plot-svg .annot { fill: var(--copper); font-size: 11px; }
-svg.plot-svg .annot-line { stroke: var(--copper); stroke-width: 1; stroke-dasharray: 2 2; }
-
-.plot-legend {
-  margin-top: var(--space-md);
-  padding-top: var(--space-md);
-  border-top: 1px solid var(--hairline);
-  font-family: var(--font);
-  font-size: 11.5px;
-  color: var(--ink-soft);
-  line-height: 1.6;
-  max-width: 75ch;
-}
-.plot-legend b { color: var(--copper); font-weight: 500; }
 
 /* ─── Table runs détaillés ────────────────────────────────────────── */
 
@@ -468,7 +413,7 @@ svg.plot-svg .annot-line { stroke: var(--copper); stroke-width: 1; stroke-dashar
   from { opacity: 0; transform: translateY(6px); }
   to   { opacity: 1; transform: translateY(0); }
 }
-.dial, .plot, .run-meta { animation: rise 700ms cubic-bezier(0.16, 1, 0.3, 1) both; }
+.dial, .run-meta { animation: rise 700ms cubic-bezier(0.16, 1, 0.3, 1) both; }
 .dial:nth-child(2) { animation-delay: 60ms; }
 .dial:nth-child(3) { animation-delay: 120ms; }
 .dial:nth-child(4) { animation-delay: 180ms; }
@@ -519,7 +464,7 @@ svg.plot-svg .annot-line { stroke: var(--copper); stroke-width: 1; stroke-dashar
       <!-- Carte hero : Latence (TTFT + TPOT) -->
       <article class="dial dial--hero" data-family="latency">
         <div class="dial-head">
-          <span class="dial-label">Latence</span>
+          <span class="dial-label"><span class="fam">Latence</span></span>
           <p class="dial-caption">
             Comment le modèle se ressent côté utilisateur : vitesse d'arrivée du
             premier mot, puis cadence des suivants.
@@ -552,7 +497,10 @@ svg.plot-svg .annot-line { stroke: var(--copper); stroke-width: 1; stroke-dashar
       <!-- Carte débit -->
       <article class="dial" data-family="throughput">
         <div class="dial-head">
-          <span class="dial-label">Débit système</span>
+          <span class="dial-label">
+            <span class="fam">Débit</span>
+            <span class="metric-qual">tok/s système</span>
+          </span>
           <p class="dial-caption">Tokens/seconde produits par le serveur sur tout le batch. Ce que voit l'opérateur.</p>
         </div>
         <div class="dial-value">
@@ -566,7 +514,10 @@ svg.plot-svg .annot-line { stroke: var(--copper); stroke-width: 1; stroke-dashar
       <!-- Carte coût -->
       <article class="dial" data-family="cost">
         <div class="dial-head">
-          <span class="dial-label">Coût · $/1M tok out</span>
+          <span class="dial-label">
+            <span class="fam">Coût</span>
+            <span class="metric-qual">$/1M tok out</span>
+          </span>
           <p class="dial-caption">Prix observé du run, ramené à 1 million de tokens de sortie. Unité standard de comparaison.</p>
         </div>
         <div class="dial-value">
@@ -581,7 +532,10 @@ svg.plot-svg .annot-line { stroke: var(--copper); stroke-width: 1; stroke-dashar
       <!-- Carte VRAM (s'efface si non dispo) -->
       <article class="dial" id="dial-vram" data-family="resources">
         <div class="dial-head">
-          <span class="dial-label">VRAM peak</span>
+          <span class="dial-label">
+            <span class="fam">Ressources</span>
+            <span class="metric-qual">VRAM peak</span>
+          </span>
           <p class="dial-caption">Mémoire GPU consommée au pic. Détermine le batch max et la longueur de contexte exploitable.</p>
         </div>
         <div class="dial-value">
@@ -595,43 +549,10 @@ svg.plot-svg .annot-line { stroke: var(--copper); stroke-width: 1; stroke-dashar
     </div>
   </section>
 
-  <!-- ───── Section 2 : Courbe latence/débit ───── -->
+  <!-- ───── Section 2 : runs bruts ───── -->
   <section class="section data-zone">
     <div class="section-rule">
       <span class="num">§ 02</span>
-      <h2>Courbe latence / débit</h2>
-      <span class="line"></span>
-      <span class="stamp">sweep de concurrence</span>
-    </div>
-
-    <div class="plot">
-      <div class="plot-head">
-        <div class="plot-axes-legend">
-          <span class="y">débit système (tok/s)</span>
-          <span class="y2">TTFT médian (ms)</span>
-        </div>
-      </div>
-
-      <svg class="plot-svg" id="plot" viewBox="0 0 900 380"
-           preserveAspectRatio="xMidYMid meet" role="img"
-           aria-labelledby="plot-title plot-desc">
-        <title id="plot-title">Courbe latence/débit système</title>
-        <desc id="plot-desc">Débit système (axe gauche, ochre) et TTFT médian (axe droit, terracotta) en fonction du niveau de concurrence (axe X logarithmique).</desc>
-      </svg>
-
-      <p class="plot-legend">
-        Lecture : à concurrence faible, la latence est basse mais le débit
-        plafonne. À concurrence élevée, le débit système monte jusqu'à un
-        coude. Au-delà, la file d'attente s'allonge et le TTFT explose.
-        Le bon point d'opération est <b>juste avant ce coude</b>.
-      </p>
-    </div>
-  </section>
-
-  <!-- ───── Section 3 : runs bruts ───── -->
-  <section class="section data-zone">
-    <div class="section-rule">
-      <span class="num">§ 03</span>
       <h2>Runs individuels</h2>
       <span class="line"></span>
       <span class="stamp">traçabilité</span>
@@ -791,134 +712,7 @@ function render(report) {
     set("m-gpu-util", "—");
   }
 
-  drawPlot(report.throughput_curve || []);
   drawRuns(report.latency_runs || []);
-}
-
-// ──────────────────────────────────────────────────────────────────────
-// Tracé SVG : courbe latence/débit
-// ──────────────────────────────────────────────────────────────────────
-
-function drawPlot(points) {
-  const svg = document.getElementById("plot");
-  // Préserve <title>/<desc> (a11y), retire le reste.
-  [...svg.children].forEach(c => {
-    if (c.tagName !== "title" && c.tagName !== "desc") c.remove();
-  });
-
-  if (!points.length) {
-    const t = el("text", { x: 450, y: 190, "text-anchor": "middle", fill: "var(--ink-mute)" });
-    t.textContent = "Pas de sweep de débit dans ce relevé.";
-    svg.appendChild(t);
-    return;
-  }
-
-  // Marges intérieures du plot
-  // M.t large : laisse de la place pour l'annotation du pic au-dessus
-  // du tick supérieur, sans collision.
-  const W = 900, H = 400;
-  const M = { t: 56, r: 72, b: 56, l: 64 };
-  const innerW = W - M.l - M.r;
-  const innerH = H - M.t - M.b;
-
-  const xs = points.map(p => p.concurrency);
-  const tputs = points.map(p => p.system_tokens_per_sec);
-  const ttfts = points.map(p => p.ttft_median_ms);
-
-  const xMin = Math.min(...xs), xMax = Math.max(...xs);
-  const tputMax = roundUpNice(Math.max(...tputs));
-  const ttftMax = roundUpNice(Math.max(...ttfts));
-
-  // Échelle log pour l'axe X (concurrence se lit naturellement en log)
-  const xScale = c => M.l + (Math.log2(c) - Math.log2(xMin)) /
-                              (Math.log2(xMax) - Math.log2(xMin)) * innerW;
-  const yTput = v => M.t + innerH - (v / tputMax) * innerH;
-  const yTtft = v => M.t + innerH - (v / ttftMax) * innerH;
-
-  // Grille horizontale (5 niveaux)
-  for (let i = 0; i <= 4; i++) {
-    const y = M.t + (innerH * i / 4);
-    svg.appendChild(el("line", { class: "grid-line", x1: M.l, x2: M.l + innerW, y1: y, y2: y }));
-  }
-
-  // Axes
-  svg.appendChild(el("line", { class: "axis-line", x1: M.l, x2: M.l + innerW, y1: M.t + innerH, y2: M.t + innerH }));
-  svg.appendChild(el("line", { class: "axis-line", x1: M.l, x2: M.l, y1: M.t, y2: M.t + innerH }));
-  svg.appendChild(el("line", { class: "axis-line", x1: M.l + innerW, x2: M.l + innerW, y1: M.t, y2: M.t + innerH }));
-
-  // Ticks X : un par point (concurrence)
-  xs.forEach(c => {
-    const x = xScale(c);
-    svg.appendChild(el("line", { class: "tick", x1: x, x2: x, y1: M.t + innerH, y2: M.t + innerH + 6 }));
-    const t = el("text", { class: "tick-label", x, y: M.t + innerH + 20, "text-anchor": "middle" });
-    t.textContent = c;
-    svg.appendChild(t);
-  });
-  const xTitle = el("text", { class: "axis-title", x: M.l + innerW / 2, y: H - 14, "text-anchor": "middle" });
-  xTitle.textContent = "CONCURRENCE";
-  svg.appendChild(xTitle);
-
-  // Ticks Y gauche (débit, ochre)
-  for (let i = 0; i <= 4; i++) {
-    const v = tputMax * (i / 4);
-    const y = yTput(v);
-    const t = el("text", { class: "tick-label", x: M.l - 8, y: y + 4, "text-anchor": "end" });
-    t.textContent = Math.round(v);
-    svg.appendChild(t);
-  }
-  // Ticks Y droite (TTFT, terracotta)
-  for (let i = 0; i <= 4; i++) {
-    const v = ttftMax * (i / 4);
-    const y = yTtft(v);
-    const t = el("text", { class: "tick-label", x: M.l + innerW + 8, y: y + 4, "text-anchor": "start" });
-    t.textContent = Math.round(v);
-    svg.appendChild(t);
-  }
-
-  // Courbes (path)
-  const pathTput = points.map((p, i) =>
-    (i === 0 ? "M" : "L") + xScale(p.concurrency).toFixed(1) + " " + yTput(p.system_tokens_per_sec).toFixed(1)).join(" ");
-  svg.appendChild(el("path", { class: "curve-tput", d: pathTput }));
-
-  const pathTtft = points.map((p, i) =>
-    (i === 0 ? "M" : "L") + xScale(p.concurrency).toFixed(1) + " " + yTtft(p.ttft_median_ms).toFixed(1)).join(" ");
-  svg.appendChild(el("path", { class: "curve-ttft", d: pathTtft }));
-
-  // Points
-  points.forEach(p => {
-    svg.appendChild(el("circle", { class: "point tput", cx: xScale(p.concurrency), cy: yTput(p.system_tokens_per_sec), r: 3.5 }));
-    svg.appendChild(el("circle", { class: "point ttft", cx: xScale(p.concurrency), cy: yTtft(p.ttft_median_ms), r: 3.5 }));
-  });
-
-  // Annotation : pic de débit — au-dessus de la zone des ticks pour éviter
-  // toute collision avec les labels d'axe.
-  const best = points.reduce((a, b) => a.system_tokens_per_sec > b.system_tokens_per_sec ? a : b);
-  const bx = xScale(best.concurrency), by = yTput(best.system_tokens_per_sec);
-  // Ancrage horizontal du texte selon position sur l'axe X (évite le débord
-  // à droite quand le pic est près du bord).
-  const anchor = bx > M.l + innerW * 0.7 ? "end" : bx < M.l + innerW * 0.3 ? "start" : "middle";
-  svg.appendChild(el("line", { class: "annot-line", x1: bx, x2: bx, y1: by - 6, y2: 28 }));
-  const annot = el("text", { class: "annot", x: bx, y: 20, "text-anchor": anchor });
-  annot.textContent = `▼ pic ${Math.round(best.system_tokens_per_sec)} tok/s · conc ${best.concurrency}`;
-  svg.appendChild(annot);
-}
-
-function el(tag, attrs) {
-  const n = document.createElementNS("http://www.w3.org/2000/svg", tag);
-  for (const k in attrs) n.setAttribute(k, attrs[k]);
-  return n;
-}
-
-function roundUpNice(v) {
-  if (v <= 0) return 1;
-  const pow = Math.pow(10, Math.floor(Math.log10(v)));
-  const n = v / pow;
-  let step;
-  if (n <= 1) step = 1;
-  else if (n <= 2) step = 2;
-  else if (n <= 5) step = 5;
-  else step = 10;
-  return step * pow;
 }
 
 // ──────────────────────────────────────────────────────────────────────

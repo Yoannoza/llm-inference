@@ -4,7 +4,6 @@
 > Et héberge un modèle GGUF en une commande avec `infer-serve`.
 
 ![dashboard](docs/dashboard.png)
-<!-- TODO: capture du dashboard.html avec un report.json chargé -->
 
 ---
 
@@ -37,7 +36,6 @@ python -m serve.cli down
 `up` enchaîne : détection env → install llama.cpp → download GGUF (quant auto selon RAM/VRAM) → lance `llama-server` → vérifie `/v1/models`.
 
 ![infer-serve up](docs/serve-up.png)
-<!-- TODO: capture du terminal pendant `infer-serve up` -->
 
 ---
 
@@ -57,7 +55,6 @@ Découpage aligné sur le draft IETF [`draft-gaikwad-llm-benchmarking-terminolog
 - **TPOT** : `(latence_totale - TTFT) / (n_tokens - 1)`. Reflète l'efficacité du *decode*.
 
 ![rapport unifié](docs/report-output.png)
-<!-- TODO: capture du terminal après `report` -->
 
 ---
 

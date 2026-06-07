@@ -36,3 +36,4 @@ serve/logs/
 # Rapports générés (artefacts utilisateur)
 report.json
 *.report.json
+*-local.json
